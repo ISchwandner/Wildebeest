@@ -1,0 +1,111 @@
+---
+title: "Data_WildebeestMaraFencing"
+author: "Imogen Schwandner -2671952S"
+date: '2022-05-02'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1. Load libraries
+
+```{r}
+library(rgdal)
+```
+
+
+2. Read data into project and adjust data structure and re-project where necessary
+
+2.1. Wildebeest
+2.1.1. Old 2011-2013
+
+```{r}
+# readOGR::rgdal
+
+## POINTS
+
+# read wildebeest point data from 2011 to 2013
+WOP <- readOGR("Smithsonian_data/Data/Wildebeest/WildMara_UTM36s.shp", GDAL1_integer64_policy = TRUE)
+
+#fix ID, date, time, DateTime, timestamp, DUPS?, some num should be int??
+
+```
+```{r}
+## LINES
+
+# read wildebeest line data from 2011 to 2013
+WOL <- readOGR("Smithsonian_data/Data/Wildebeest/WildMara_Lines_UTM36s.shp")
+
+```
+
+
+
+2.1.2. New 2017-2020
+
+```{r}
+## POINTS
+
+# read in wildebeest point data 2017 to 2020
+WNP <- readOGR("Smithsonian_data/Data/Wildebeest/WildNew_UTM36s.shp", GDAL1_integer64_policy = TRUE)
+
+# fix Date, can ignore migrant (all 0), year should be int or num
+```
+
+```{r}
+## LINES
+
+# read in wildebeest line data form 2017 to 2020
+WNL <- readOGR("Smithsonian_data/Data/Wildebeest/WildNew_Lines_UTM36s.shp")
+```
+
+2.2. Fencing
+
+```{r}
+fence <- readOGR("Smithsonian_data/Data/Fencing/LandDx/LandDx_Fencing_UTM36s_WGS84.shp")
+```
+
+2.3. Base map layers
+2.3.1. Kenya
+
+```{r}
+kenya <- readOGR("Smithsonian_data/Data/Country/Kenya_UTM36s.shp")
+```
+
+2.3.2. Protected Areas (PA)
+
+```{r}
+# Serengeti National Park
+SNP <- readOGR("Smithsonian_data/Data/ProtectedAreas/SNP.shp")
+```
+```{r}
+# Maasai Mara National Reserve
+MMNR <- readOGR("Smithsonian_data/Data/ProtectedAreas/MMNR_Clip.shp")
+```
+```{r}
+# Mara Conservancies
+MC <- readOGR("Smithsonian_data/Data/ProtectedAreas/MaraCons_UTM36s.shp")
+```
+
+
+2.3.3. Rivers
+
+```{r}
+# read permanent rivers data
+rivers <- readOGR("Smithsonian_data/Data/Rivers/PermanentRiver.shp")
+```
+
+2.3.4. Roads
+
+```{r}
+# read primary roads data
+roads <- readOGR("Smithsonian_data/Data/Roads/Primary_Roads.shp")
+```
+
+2.3.5. Towns
+
+```{r}
+towns <- readOGR("Smithsonian_data/Data/Towns/Towns.shp")
+```
+
