@@ -10,51 +10,57 @@ output: html_document
 
 ```{r}
 library(rgdal)
+library(rgeos)
+library(sp)
 ```
-
 
 2. Read data into project and adjust data structure and re-project where necessary
 
-2.1. Wildebeest
-2.1.1. Old 2011-2013
-
+2.1. Wildebeest data
 ```{r}
-# readOGR::rgdal
+#read data
+WB <- read.csv("WB_SNP_2010_2021_forImogen.csv")
 
-## POINTS
+#set crs
+crs <- CRS("+init=epsg:32736")
 
-# read wildebeest point data from 2011 to 2013
-WOP <- readOGR("Smithsonian_data/Data/Wildebeest/WildMara_UTM36s.shp", GDAL1_integer64_policy = TRUE)
+#reformat date column as POSIX
+WB$datetime <- as.POSIXct(WB$Date, format="%d/%m/%Y %H:%M", tz='GMT')
 
-#fix ID, date, time, DateTime, timestamp, DUPS?, some num should be int??
 
-```
-```{r}
-## LINES
-
-# read wildebeest line data from 2011 to 2013
-WOL <- readOGR("Smithsonian_data/Data/Wildebeest/WildMara_Lines_UTM36s.shp")
+# project data - convert to spatialpoints df
+coordinates(WB) <- ~x+y
+proj4string(WB) <- crs
 
 ```
 
 
+Subset into 2010-13 (Stabach) and 2017-21 (Hopcraft) data sets
+Remove 3 individuals that migrate far south into the Serengeti.
+Write as shapefiles for QGIS.
 
-2.1.2. New 2017-2020
-
+2.1.1. 2010-2013 Stabach
 ```{r}
-## POINTS
+#subset Stabach data only
+WBS <- subset(WB, OWNER == "STABACH")
 
-# read in wildebeest point data 2017 to 2020
-WNP <- readOGR("Smithsonian_data/Data/Wildebeest/WildNew_UTM36s.shp", GDAL1_integer64_policy = TRUE)
+#remove individuals 2834 and 2845
+WBS <- subset(WBS, AID != "2834" & AID != "2845")
 
-# fix Date, can ignore migrant (all 0), year should be int or num
+#write as shapefile
+#writeOGR(WBS, dsn='.','WB-2010-2013', driver = "ESRI Shapefile")
 ```
 
+2.1.2. 2017-2021 Hopcraft
 ```{r}
-## LINES
+#subset Hopcraft data only
+WBH <- subset(WB, OWNER == "HOPCRAFT")
 
-# read in wildebeest line data form 2017 to 2020
-WNL <- readOGR("Smithsonian_data/Data/Wildebeest/WildNew_Lines_UTM36s.shp")
+#remove W69
+WBH <- subset(WBH, AID != "W69")
+
+#write as shapefile
+#writeOGR(WBH, dsn='.','WB-2017-2021', driver = "ESRI Shapefile")
 ```
 
 2.2. Fencing
@@ -63,11 +69,23 @@ WNL <- readOGR("Smithsonian_data/Data/Wildebeest/WildNew_Lines_UTM36s.shp")
 fence <- readOGR("Smithsonian_data/Data/Fencing/LandDx/LandDx_Fencing_UTM36s_WGS84.shp")
 ```
 
+##clip by study area or narok (+10km buffer needed, additional buffer needed for 27km buffer around each presence point in HS model)
+
 2.3. Base map layers
-2.3.1. Kenya
+
+2.3.1.1. Kenya
 
 ```{r}
 kenya <- readOGR("Smithsonian_data/Data/Country/Kenya_UTM36s.shp")
+```
+
+3.2.1.2. Narok County - Converted to study area with 10 km buffer
+
+```{r}
+Narok <-  readOGR("Smithsonian_data/Data/Country/Narok/Narok.shp")
+
+#StudyArea <- gBuffer(Narok, byid=T, width= 10) # additional needed for bufefring around presence points in HS model
+
 ```
 
 2.3.2. Protected Areas (PA)
@@ -91,6 +109,8 @@ MC <- readOGR("Smithsonian_data/Data/ProtectedAreas/MaraCons_UTM36s.shp")
 ```{r}
 # read permanent rivers data
 rivers <- readOGR("Smithsonian_data/Data/Rivers/PermanentRiver.shp")
+
+#reprojection needed
 ```
 
 2.3.4. Roads
@@ -104,5 +124,12 @@ roads <- readOGR("Smithsonian_data/Data/Roads/Primary_Roads.shp")
 
 ```{r}
 towns <- readOGR("Smithsonian_data/Data/Towns/Towns.shp")
+```
+
+2.4. Study Area (rectangle including Mara protected areas and all GPS fixes, with buffer)
+```{r}
+StudyArea <- readOGR("Smithsonian_data/Data/StudyArea/StudyArea_reproj.shp")
+
+#possibly needs enlarging to allow 27 km buffer for HS model pseudo-absences
 ```
 
