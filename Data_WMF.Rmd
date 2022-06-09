@@ -108,9 +108,7 @@ MC <- readOGR("Smithsonian_data/Data/ProtectedAreas/MaraCons_UTM36s.shp")
 
 ```{r}
 # read permanent rivers data
-rivers <- readOGR("Smithsonian_data/Data/Rivers/PermanentRiver.shp")
-
-#reprojection needed
+rivers <- readOGR("Smithsonian_data/Data/Rivers/Rivers_reporj.shp")
 ```
 
 2.3.4. Roads
