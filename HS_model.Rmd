@@ -1,0 +1,138 @@
+---
+title: "Habitat_Suitability_Model_10-13"
+author: "Imogen Schwandner -2671952S"
+date: '2022-06-08'
+output: html_document
+---
+
+A habitat-suitability model based on wildebeest GPS tracking data from 2010-2013. Built in a logistic regression framework with a logit link, based on location fixes as presences and pseudo-absences. Pseudo absences will be randomly generated i=within a buffer of the maximum obsoverd step length of any animal in the data set.
+
+```{r}
+library(rgeos)
+library(rgdal)
+library(sp)
+library(adehabitatHR)
+library(dplyr)
+library(lm4e)
+```
+
+1. Load wildebeest data and covariate layers
+
+```{r}
+load("WB_and_Covariates_data.RData")
+```
+
+2. Create buffers for pseudo-absences
+
+Buffer size chosen as the maximum observed step length over 3 hour period for each animal in the data set
+
+2.1. Calculate maximum 3h step length for each individual
+
+```{r}
+### 2.1.1. Load and reformat data
+# convert spatial points object to dataframe
+WBS <- as.data.frame(WBS) #must be dataframe
+
+# reformat date column as POSIX
+WBS$datetime <- as.POSIXct(WBS$Date, format="%d/%m/%Y %H:%M", tz='GMT')
+
+### 2.1.1. Create Trajectories
+# convert points into a trajectory using 'adehabitat' package
+WBtraj <- as.ltraj(cbind(WBS$coords.x1, WBS$coords.x2),date = WBS$datetime,id = (WBS$AID))
+
+### 2.1.2. Create large combined trajectories dataframe
+# Create a dataframe to holds all of the contents of WBtraj 
+# Put first individual into the dataframe
+WBtraj.df <- data.frame(WBtraj[[1]], id = attr(WBtraj[[1]], "id"))
+
+# Use a for loop to fill the larger dataframe with the rest of the trajectories
+for(i in 2:length(WBtraj)) {
+  WBtraj.df <- rbind(WBtraj.df, 
+                    data.frame(WBtraj[[i]],
+                    id = attr(WBtraj[[i]], "id")))
+}
+
+# remove NA's (final location has no distance displaced thereafter)
+WBtraj.df <- subset(WBtraj.df, dist != "NA")
+
+### 2.1.3. Obtain maximum distance displaced
+#obtain maximum distance displaced total
+max(WBtraj.df$dist)
+# 27446.55 ~ 27.5 km
+
+### 2.1.4. Maximum distance displaced over 3 h PER INDIVIDUAL
+# create object with individual ID and maximum distance displaced
+indiv.max.dist <- WBtraj.df %>% group_by(id) %>% summarise(maxdist = max(dist))
+#calculate mean
+mean(indiv.max.dist$maxdist)
+#10968.45 m ~ 11 km
+# calculate median
+median(indiv.max.dist$maxdist)
+#7903.08 m  ~  8 km
+
+### 2.1.5. Create vector of individual buffer sizes
+sizes <- c(indiv.max.dist$maxdist)
+
+```
+
+2.2. Creating an individual buffer corresponding to the respective maximum observed step length over a 3 h interval (for the availability points of each individual)
+```{r}
+
+# split WBS into list of dataframes for each individual
+WBS_indiv <- split(WBS, WBS$AID)
+
+
+# create an empty list for the results
+Result <- list()
+
+# For loop to run through every item in the list of individuals, to create a buffer with the extracted maximum observed step length corresponding to each individual
+for (i in 1:length(sizes)) {
+  
+  #iterate through
+  Result[[i]] <- rgeos::gBuffer(WBS_indiv[[i]], 
+                                byid = TRUE, 
+                                width = sizes[i])
+}
+
+```
+
+3. Load Covariate data layers
+
+3.1. Distance to Rivers, Roads & Woody Cover
+
+3.1.1. Rivers
+```{r}
+# Calculate distance of each observation to nearest permanent river, then add column to dataframe
+# rgeos::gDistance
+distance.matrix.rivers <- gDistance(rivers, WBS,  byid=TRUE)
+WBS@data$D_river<-apply(distance.matrix.rivers,1,min)
+head(WBS@data)
+
+```
+
+3.1.2. Roads
+
+```{r}
+# Calculate the distance of each observation to the nearest primary road, then add the column to the dataframe
+# rgeos::gDistance
+distance.matrix.roads <- gDistance(roads, WBS,  byid=TRUE)
+WBS@data$D_road<-apply(distance.matrix.roads,1,min)
+head(WBS@data)
+```
+
+3.1.3. Woody Vegetation
+
+```{r}
+# Calculate distance of each observation to nearest patch of woody cover over 40%, then add column to dataframe
+# rgeos::gDistance
+distance.matrix.wood <- gDistance(woody, WBS,  byid=TRUE)
+WBS@data$D_wood<-apply(distance.matrix.wood,1,min)
+head(WBS@data)
+
+```
+
+3.2. NDVI and DNDVI
+
+3.3. TWI
+
+3.4. Anthropogenic Footprint

@@ -27,6 +27,8 @@ crs <- CRS("+init=epsg:32736")
 #reformat date column as POSIX
 WB$datetime <- as.POSIXct(WB$Date, format="%d/%m/%Y %H:%M", tz='GMT')
 
+# Convert time form GMT to local time (East African time)
+attributes(WB$datetime)$tzone <- "Africa/Nairobi" 
 
 # project data - convert to spatialpoints df
 coordinates(WB) <- ~x+y
@@ -122,6 +124,17 @@ roads <- readOGR("Smithsonian_data/Data/Roads/Primary_Roads.shp")
 
 ```{r}
 towns <- readOGR("Smithsonian_data/Data/Towns/Towns.shp")
+```
+2.3.6. Woody Vegetation
+
+```{r}
+wood <- readOGR("Smithsonian_data/Data/WoodyVegetation/Woody_N_repoj.shp")
+
+#needs clipping by study area?
+
+# Subset by tree or shrub cover >40%
+wood <- subset(wood, WOODY_DESC != "Closed to open trees" & WOODY_DESC != "Closed to open trees (30 % polygon area)" & WOODY_DESC != "Closed to open shrubs")
+
 ```
 
 2.4. Study Area (rectangle including Mara protected areas and all GPS fixes, with buffer)
