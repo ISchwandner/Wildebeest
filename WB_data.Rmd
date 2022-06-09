@@ -1,0 +1,58 @@
+---
+title: "Wildebeest_data"
+author: "Imogen Schwandner -2671952S"
+date: '2022-06-02'
+output: html_document
+---
+
+
+```{r}
+library(sp)
+```
+
+Loading data and formatting
+```{r}
+#read data
+WB <- read.csv("WB_SNP_2010_2021_forImogen.csv")
+
+#set crs
+crs <- CRS("+init=epsg:32736")
+
+#reformat date column as POSIX
+WB$datetime <- as.POSIXct(WB$Date, format="%d/%m/%Y %H:%M", tz='GMT')
+
+
+# project data - convert to spatialpoints df
+coordinates(WB) <- ~x+y
+proj4string(WB) <- crs
+
+```
+
+Subset into 2010-13 (Stabach) and 2017-21 (Hopcraft) data sets
+Remove 3 individuals that migrate far south into the Serengeti.
+Write as shapefiles for QGIS.
+
+2010-2013 Stabach
+```{r}
+#subset Stabach data only
+WBS <- subset(WB, OWNER == "STABACH")
+
+#remove individuals 2834 and 2845
+WBS <- subset(WBS, AID != "2834" & AID != "2845")
+
+#write as shapefile
+#writeOGR(WBS, dsn='.','WB-2010-2013', driver = "ESRI Shapefile")
+```
+
+2017-2021 Hopcraft
+```{r}
+#subset Hopcraft data only
+WBH <- subset(WB, OWNER == "HOPCRAFT")
+
+#remove W69
+WBH <- subset(WBH, AID != "W69")
+
+#write as shapefile
+#writeOGR(WBH, dsn='.','WB-2017-2021', driver = "ESRI Shapefile")
+```
+
