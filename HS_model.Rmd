@@ -7,13 +7,16 @@ output: html_document
 
 A habitat-suitability model based on wildebeest GPS tracking data from 2010-2013. Built in a logistic regression framework with a logit link, based on location fixes as presences and pseudo-absences. Pseudo absences will be randomly generated i=within a buffer of the maximum obsoverd step length of any animal in the data set.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(rgeos)
 library(rgdal)
 library(sp)
 library(adehabitatHR)
 library(dplyr)
-library(lm4e)
+library(raster)
+library(sf)
+library(amt)
+#library(lme4)
 ```
 
 1. Load wildebeest data and covariate layers
@@ -38,7 +41,7 @@ WBS$datetime <- as.POSIXct(WBS$Date, format="%d/%m/%Y %H:%M", tz='GMT')
 
 ### 2.1.1. Create Trajectories
 # convert points into a trajectory using 'adehabitat' package
-WBtraj <- as.ltraj(cbind(WBS$coords.x1, WBS$coords.x2),date = WBS$datetime,id = (WBS$AID))
+WBtraj <- as.ltraj(cbind(WBS$x, WBS$y),date = WBS$datetime,id = (WBS$AID))
 
 ### 2.1.2. Create large combined trajectories dataframe
 # Create a dataframe to holds all of the contents of WBtraj 
@@ -77,62 +80,80 @@ sizes <- c(indiv.max.dist$maxdist)
 
 2.2. Creating an individual buffer corresponding to the respective maximum observed step length over a 3 h interval (for the availability points of each individual)
 ```{r}
+# project data - convert to spatialpoints df
+coordinates(WBS) <- ~x+y
+proj4string(WBS) <- crs
 
 # split WBS into list of dataframes for each individual
 WBS_indiv <- split(WBS, WBS$AID)
 
 
 # create an empty list for the results
-Result <- list()
+Buffer_list <- list()
 
 # For loop to run through every item in the list of individuals, to create a buffer with the extracted maximum observed step length corresponding to each individual
 for (i in 1:length(sizes)) {
   
   #iterate through
-  Result[[i]] <- rgeos::gBuffer(WBS_indiv[[i]], 
+  Buffer_list[[i]] <- rgeos::gBuffer(WBS_indiv[[i]], 
                                 byid = TRUE, 
                                 width = sizes[i])
 }
 
+# Unlist buffers into single spatial object
+#Buffers <- rbind(unlist(Buffer_list))
 ```
 
-3. Load Covariate data layers
-
-3.1. Distance to Rivers, Roads & Woody Cover
-
-3.1.1. Rivers
-```{r}
-# Calculate distance of each observation to nearest permanent river, then add column to dataframe
-# rgeos::gDistance
-distance.matrix.rivers <- gDistance(rivers, WBS,  byid=TRUE)
-WBS@data$D_river<-apply(distance.matrix.rivers,1,min)
-head(WBS@data)
-
-```
-
-3.1.2. Roads
+2.3. Generating 100 random points within each buffer as pseudo-absences
 
 ```{r}
-# Calculate the distance of each observation to the nearest primary road, then add the column to the dataframe
-# rgeos::gDistance
-distance.matrix.roads <- gDistance(roads, WBS,  byid=TRUE)
-WBS@data$D_road<-apply(distance.matrix.roads,1,min)
-head(WBS@data)
+
 ```
 
-3.1.3. Woody Vegetation
+_. Editing WBS data to keep only columns of interest for HBS model
 
 ```{r}
-# Calculate distance of each observation to nearest patch of woody cover over 40%, then add column to dataframe
-# rgeos::gDistance
-distance.matrix.wood <- gDistance(woody, WBS,  byid=TRUE)
-WBS@data$D_wood<-apply(distance.matrix.wood,1,min)
-head(WBS@data)
-
+WBS@data <- WBS@data[, c(1,10:11,22)]
 ```
 
-3.2. NDVI and DNDVI
+_. Extracting Covariates for Presence-Points
 
-3.3. TWI
+_._. Creating a raster stack
 
-3.4. Anthropogenic Footprint
+WB presence data already have NDVI and DNDVI extracted and attached
+
+```{r}
+WBS_stack <- stack(anthro, D_river, D_roadT1, D_roadT5, D_wood, TWI)
+```
+
+_._ Extract Covariates for WBS _Presence Points
+
+```{r}
+rasValue <- extract(WBS_stack, WBS)
+```
+
+_._ Convert to data frame and join raster Values
+
+```{r}
+WBS_RSF <- as.data.frame(WBS)
+
+WBS_RSF <- cbind(WBS_RSF, rasValue)
+```
+
+```{r}
+# Create P/A column with value 1
+WBS_RSF$PA <- 1
+```
+
+_._ Extract Covariates for Pseudo-Absences
+
+
+-.- Add pseudo-absences and covariates to WBS_RSF
+(might need to reorder and change some columns)
+
+_._ Build a habitat suitability model
+
+```{r}
+M <- glmer(PA ~ scale(indvi) + sclae(dndvi) + scale(TWI) + scale(D_wood) + scale(D_river) + scale(D_rdt1) + scale(D_rdt5) + scale(anthro) + scale(I(D_wood^2)) + scale(I(D_river)^2) + scale(I(D_rdt1)^2) + scale(I(D_rdt5)^2), data = WBS_RSF, family = binomial(link="logit"))
+```
+

@@ -12,6 +12,7 @@ output: html_document
 library(rgdal)
 library(rgeos)
 library(sp)
+library(raster)
 ```
 
 2. Read data into project and adjust data structure and re-project where necessary
@@ -65,82 +66,49 @@ WBH <- subset(WBH, AID != "W69")
 #writeOGR(WBH, dsn='.','WB-2017-2021', driver = "ESRI Shapefile")
 ```
 
-2.2. Fencing
+2.2. Covariates for Habitat Suitability Model
+
+2.2.1. Anthropogenic Risk
 
 ```{r}
-fence <- readOGR("Smithsonian_data/Data/Fencing/LandDx/LandDx_Fencing_UTM36s_WGS84.shp")
+anthro <- raster("Smithsonian_data/Data/Data_Layers/32736/reprojanth_risk_clp.tif")
 ```
 
-##clip by study area or narok (+10km buffer needed, additional buffer needed for 27km buffer around each presence point in HS model)
+2.2.2. NDVI
 
-2.3. Base map layers
+2.2.3. DNDVI
 
-2.3.1.1. Kenya
-
-```{r}
-kenya <- readOGR("Smithsonian_data/Data/Country/Kenya_UTM36s.shp")
-```
-
-3.2.1.2. Narok County - Converted to study area with 10 km buffer
+2.2.4. TWI
 
 ```{r}
-Narok <-  readOGR("Smithsonian_data/Data/Country/Narok/Narok.shp")
-
-#StudyArea <- gBuffer(Narok, byid=T, width= 10) # additional needed for bufefring around presence points in HS model
+# need to resample TWI to extent and resolution of remaining layers 
+anthro <- raster::brick("Smithsonian_data/Data/Data_Layers/32736/reprojanth_risk_clp.tif")
+TWI <- raster::brick("Smithsonian_data/Data/TWI/twi_200/hdr.adf")
+TWI <- resample(TWI, anthro)
 
 ```
 
-2.3.2. Protected Areas (PA)
+
+2.2.5. Distance to Woody Vegetation
 
 ```{r}
-# Serengeti National Park
-SNP <- readOGR("Smithsonian_data/Data/ProtectedAreas/SNP.shp")
-```
-```{r}
-# Maasai Mara National Reserve
-MMNR <- readOGR("Smithsonian_data/Data/ProtectedAreas/MMNR_Clip.shp")
-```
-```{r}
-# Mara Conservancies
-MC <- readOGR("Smithsonian_data/Data/ProtectedAreas/MaraCons_UTM36s.shp")
+D_wood <- raster("Smithsonian_data/Data/Data_Layers/32736/reprojwoody_dst_clp.tif")
 ```
 
-
-2.3.3. Rivers
+2.2.6. Distance to Rivers
 
 ```{r}
-# read permanent rivers data
-rivers <- readOGR("Smithsonian_data/Data/Rivers/Rivers_reporj.shp")
+D_river <- raster("Smithsonian_data/Data/Data_Layers/32736/reprojriver_dst_clp.tif")
 ```
 
-2.3.4. Roads
+2.2.7. Distance to Primary (T1) and Secondary (T5) Roads
 
 ```{r}
-# read primary roads data
-roads <- readOGR("Smithsonian_data/Data/Roads/Primary_Roads.shp")
+D_roadT1 <- raster("Smithsonian_data/Data/Data_Layers/32736/reprojrdt1_dist_clp.tif")
 ```
-
-2.3.5. Towns
 
 ```{r}
-towns <- readOGR("Smithsonian_data/Data/Towns/Towns.shp")
-```
-2.3.6. Woody Vegetation
-
-```{r}
-wood <- readOGR("Smithsonian_data/Data/WoodyVegetation/Woody_N_repoj.shp")
-
-#needs clipping by study area?
-
-# Subset by tree or shrub cover >40%
-wood <- subset(wood, WOODY_DESC != "Closed to open trees" & WOODY_DESC != "Closed to open trees (30 % polygon area)" & WOODY_DESC != "Closed to open shrubs")
-
+D_roadT5 <- raster("Smithsonian_data/Data/Data_Layers/32736/reprojrdt5_dist_clp.tif")
 ```
 
-2.4. Study Area (rectangle including Mara protected areas and all GPS fixes, with buffer)
-```{r}
-StudyArea <- readOGR("Smithsonian_data/Data/StudyArea/StudyArea_reproj.shp")
-
-#possibly needs enlarging to allow 27 km buffer for HS model pseudo-absences
-```
 
