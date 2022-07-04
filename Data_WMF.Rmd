@@ -82,9 +82,9 @@ anthro <- raster("Smithsonian_data/Data/Data_Layers/32736/reprojanth_risk_clp.ti
 
 ```{r}
 # need to resample TWI to extent and resolution of remaining layers 
-anthro <- raster::brick("Smithsonian_data/Data/Data_Layers/32736/reprojanth_risk_clp.tif")
+anthro1 <- raster::brick("Smithsonian_data/Data/Data_Layers/32736/reprojanth_risk_clp.tif")
 TWI <- raster::brick("Smithsonian_data/Data/TWI/twi_200/hdr.adf")
-TWI <- resample(TWI, anthro)
+TWI <- resample(TWI, anthro1)
 
 ```
 
