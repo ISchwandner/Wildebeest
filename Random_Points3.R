@@ -3,6 +3,7 @@
 library(sp)
 library(plyr)
 library(readr)
+library(raster)
 
 # load data (specifically Buffer_list)
 load("Buffer_list_WBS.RData")
@@ -117,16 +118,23 @@ for (v in 95002:95940) {
     
 #after cbind rp.1 and DF.1 and then rbind to Points
 Points.1 <- cbind(DFF.1, PA.1)
+# convert Points.1 to SpatialPoints
+coordinates(Points.1) <- ~x+y
+crs <- CRS("+init=epsg:32736")
+proj4string(Points.1) <- crs
 
 ###BIND POINTS up tp 95000 and 95940 together
+Points <- spTransform(Points, crs)
 Points <- rbind(Points, Points.1)
+
+
 
 ### solution 2 :
 # add an if statement into original loop for 95001 to 95940
 
 ###PA
 
-# PA.1 dor remaining 940 (95.001-95.940)
+# PA.1 for remaining 940 (95.001-95.940)
 PA.1 <- spsample(Buffer_spdf@polygons[[95001]], n = 50, "random")
 
 if(i >= 95002 || i <= 95940) {
@@ -135,7 +143,7 @@ if(i >= 95002 || i <= 95940) {
   PA.1 <- rbind(PA.1, rp)
 }
 
-
+#############END RESULT IS POINTS
 
 #check code running time
 x <- Sys.time()
