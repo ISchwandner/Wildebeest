@@ -1,4 +1,6 @@
+###################################################################
 ### Extract NDVI metrics from a set of NDVI rasters over time: 
+###################################################################
 # (1) interpolated NDVI (indvi)
 # (2) delta NDVI (dndvi)
 # (3) cumulative NDVI (cumulative ndvi)
@@ -9,6 +11,27 @@
 ## see example run code at the bottom of script 
 ## last updated 20-Jun-22
 ## T Morrison <thomas.morrison@glasgow.ac.uk>
+## Edited for this project I Schwandner <2671952@student.gla.ac.uk>
+
+###################################################################
+
+#Requires the following in your working directory
+
+# empty folder "tempfiles"
+
+# folder : "ndvi" contains MODIS derived (with original names) mean ndvi raster for each 16-day period
+# - files should take this format and naming:
+#   "MOD13Q1.A2021001.250m_16days_NDVI.tif"
+
+# folder : "ndvi_mean" contains mean NDVI raster of all 16-day means
+# - file should take this format and naming:
+#  "MEAN_MOD13Q1_250m_16days_NDVI_2022-06-08.tif"
+# optional to add Metadata text file as well as standard deviation
+#  "SD_MOD13Q1_250m_16days_NDVI_2022-05-09.tif"
+
+# empty folder: "MODIS_NDVI_MATRIX"
+
+###################################################################
 
 
 #########################################
@@ -482,12 +505,12 @@ run.ndvi.extract <- function(
 #########################################
 ## Read in data #########################
 
-# load("RSFsp.RData")
-#RSF <- spTransform(RSF, CRS("+init=epsg:21036"))
+load("RSF.RData")
+RSF <- spTransform(RSF, CRS("+init=epsg:21036"))
 
 setwd("C:/Users/Administrator/Desktop/Imogen/NDVI_Imo/")
 
-# Rund NDVI extraction
+# Run NDVI extraction
 ndvi <- run.ndvi.extract(x = RSF$x, 
                          y = RSF$y,
                          dates = RSF$datetime,
@@ -496,4 +519,5 @@ ndvi <- run.ndvi.extract(x = RSF$x,
                          ndvi.fold = "./ndvi/",
                          ave.ndvi.fold = "./ndvi_mean/")
 
-
+# save NDVI values for use in RSF.Rmd
+save(ndvi, file = "ndvi.RData")
