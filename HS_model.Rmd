@@ -22,8 +22,8 @@ library(amt)
 1. Load wildebeest data and covariate layers and Pseudo-Absense Points
 
 ```{r}
-load("WB_and_Covariates_data.RData")
-load("PointsPoints1.RData")
+load("WB_and_Covariates_data.RData") # (created in "Data_WMF.Rmd")
+load("PointsPoints1.RData") #pseudo-absences (created in "Pseudo_Absences.Rmd")
 ```
 
 
@@ -94,7 +94,6 @@ WBS_RSF <- WBS_RSF[, c(4, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11)]
 RSF <- rbind(WBS_RSF, Points_RSF)
 ```
 
--.- Extract NDVI and DNDVI for both
 
 _._ Build a habitat suitability model
 

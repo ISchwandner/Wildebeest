@@ -120,7 +120,7 @@ for (i in 2:length(Buffer_spdf@polygons)) {
     PA <- rbind(PA, rp)
   }
 
-   if(i/1000 == round(i/1000)) {
+   if(i/1000 == round(i/1000)| i==length(Buffer_spdf@polygons)) {
      print(i)
     write.csv(PA, paste0('./tempfilesPA/temp',i,'csv'), row.names=F)
     PA <- NULL
@@ -135,21 +135,6 @@ myfiles <-  list.files(path=mydir, pattern="*.csv", full.names=TRUE)
 myfiles
 # Read all files at once into single data frame
 dat_csv <-  ldply(myfiles, read_csv)
-
-### 2.3.1.1 Un-elegant problem solve: 
-# Above only samples up to 95000 and ignores remaining 940 points
-
-### PA.1 for remaining 940 (95.001-95.940)
-# Create initital dtaa frame
-PA.1 <- spsample(Buffer_spdf@polygons[[95001]], n = 50, "random")
-
-# Loop to fill rmainder of data frame
-for (w in 95002:95940) {
-  
-  rp.1 <- spsample(Buffer_spdf@polygons[[w]], n = 50, "random")
-  
-  PA.1 <- rbind(PA.1, rp.1)
-}
 
 ```
 
@@ -170,7 +155,7 @@ for (i in 2:length(WBS@data$AID)) {
     DFF <- rbind(DFF, DF)
   }
   
-  if(i/1000 == round(i/1000)) {
+  if(i/1000 == round(i/1000) | i==length((WBS@data$AID))) {
     print(i)
     write.csv(DFF, paste0('./tempfilesDFF/temp',i,'csv'), row.names =F)
     DFF <- NULL
@@ -185,19 +170,6 @@ files
 # read all files at once into single data frame
 data_csv <-  ldply(files, read_csv)
 
-### 2.3.2.1 Un-elegant solution to above problem of remaining 940 points
-
-# Create data frame with aid and datetime with 100 reps for each location, to then add coordinates to for NDVI extraction
-
-# For first point 
-DFF.1 <- data.frame( "datetime" = rep(WBS@data[95001, 22], 50), "AID" = rep(WBS@data[1, 1], 50))
-
-# Loop for remaining points
-for (v in 95002:95940) {
-  DF.1 <- data.frame( "datetime" = rep(WBS@data[v, 22], 50), "AID" = rep(WBS@data[v, 1], 50))
-  
-    DFF.1 <- rbind(DFF.1, DF.1)
-}
 ```
 
 2.3.3. Combining Results form 2.3.2. into single data frame
@@ -205,17 +177,6 @@ for (v in 95002:95940) {
 ```{r}
 ### Combine PA and DFF (locations up to 95000)
 Points <- cbind(data_csv, dat_csv)
-
-# Combine PA.1 and DFF.1 (locations 95001 -95940)
-Points.1 <- cbind(DFF.1, PA.1)
-# convert Points.1 to SpatialPoints
-coordinates(Points.1) <- ~x+y
-proj4string(Points.1) <- crs
-
-### Bind POINTS up tp 95000 and 95001-95940 together (Points and Points.1)
-# reprojecting needed
-Points <- spTransform(Points, crs)
-Points <- rbind(Points, Points.1)
 
 ### POINTS IS THE FINAL RESULT
 #save.image(Points, "PointsPoints1.RData")

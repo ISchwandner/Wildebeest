@@ -9,13 +9,11 @@ output: html_document
 1. Load libraries
 
 ```{r}
-library(rgdal)
-library(rgeos)
 library(sp)
 library(raster)
 ```
 
-2. Read data into project and adjust data structure and re-project where necessary
+2. Read data into project, adjust data structure and re-project where necessary
 
 2.1. Wildebeest data
 ```{r}
@@ -31,7 +29,7 @@ WB$datetime <- as.POSIXct(WB$Date, format="%d/%m/%Y %H:%M", tz='GMT')
 # Convert time form GMT to local time (East African time)
 attributes(WB$datetime)$tzone <- "Africa/Nairobi" 
 
-# project data - convert to spatialpoints df
+# project data - convert to SpatialPoints dataframe
 coordinates(WB) <- ~x+y
 proj4string(WB) <- crs
 
@@ -50,8 +48,6 @@ WBS <- subset(WB, OWNER == "STABACH")
 #remove individuals 2834 and 2845
 WBS <- subset(WBS, AID != "2834" & AID != "2845")
 
-#write as shapefile
-#writeOGR(WBS, dsn='.','WB-2010-2013', driver = "ESRI Shapefile")
 ```
 
 2.1.2. 2017-2021 Hopcraft
@@ -62,11 +58,11 @@ WBH <- subset(WB, OWNER == "HOPCRAFT")
 #remove W69
 WBH <- subset(WBH, AID != "W69")
 
-#write as shapefile
-#writeOGR(WBH, dsn='.','WB-2017-2021', driver = "ESRI Shapefile")
 ```
 
 2.2. Covariates for Habitat Suitability Model
+
+Layers provided by J.A. Stabach as used in Stabach (2015) and Stabach et al. (2016)
 
 2.2.1. Anthropogenic Risk
 
@@ -74,11 +70,11 @@ WBH <- subset(WBH, AID != "W69")
 anthro <- raster("Smithsonian_data/Data/Data_Layers/32736/reprojanth_risk_clp.tif")
 ```
 
-2.2.2. NDVI
+2.2.2. NDVI and DNDVI
 
-2.2.3. DNDVI
+See "ndviExtract.R"
 
-2.2.4. TWI
+2.2.3. TWI
 
 ```{r}
 # need to resample TWI to extent and resolution of remaining layers 
@@ -89,19 +85,19 @@ TWI <- resample(TWI, anthro1)
 ```
 
 
-2.2.5. Distance to Woody Vegetation
+2.2.4. Distance to Woody Vegetation
 
 ```{r}
 D_wood <- raster("Smithsonian_data/Data/Data_Layers/32736/reprojwoody_dst_clp.tif")
 ```
 
-2.2.6. Distance to Rivers
+2.2.5. Distance to Rivers
 
 ```{r}
 D_river <- raster("Smithsonian_data/Data/Data_Layers/32736/reprojriver_dst_clp.tif")
 ```
 
-2.2.7. Distance to Primary (T1) and Secondary (T5) Roads
+2.2.6. Distance to Primary (T1) and Secondary (T5) Roads
 
 ```{r}
 D_roadT1 <- raster("Smithsonian_data/Data/Data_Layers/32736/reprojrdt1_dist_clp.tif")
