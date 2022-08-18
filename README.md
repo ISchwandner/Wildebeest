@@ -3,8 +3,7 @@ Master thesis repository: Wildebeest Migration Mara (SME) and Fencing
 
 ###   PROJECT   ###
 
-Develop a habitat suitability model based on historic GPS movement data of wildebeest in the Greater Mara. Use this model to make predictions of habitat suitabilty across the study area and then analyse connectivity using the inverse of the predicted suitability as a resistance surface in Circuitscape. Connectivity analysis in Circuitscape v.4.0 to run in R found under **https://github.com/ISchwandner/Circuitscape.git**. Also contains analysis of simulated restoration via fence removal.
-Validation of results from both found here.
+Develop a habitat suitability model based on historic GPS movement data of wildebeest in the Greater Mara. Use this model to make predictions of habitat suitabilty across the study area and then analyse connectivity using the inverse of the predicted suitability as a resistance surface in Circuitscape. Connectivity analysis in Circuitscape v.4.0 to run in R . Additionally contains analysis of simulated restoration via fence removal and validation of results from both.
 
 
 ###   CONTENTS  ###
@@ -49,16 +48,32 @@ Makes predictions of habitat suitability across the study area using the model b
 
 - creates predicted habitat suitability raster across the study area ("pred_rast.tif") needed for connectiivty analysis in Circuitscape. 
 
-Connectivity Analysis, data and code found under **https://github.com/ISchwandner/Circuitscape.git**
+### Connectivity Analysis
 
-### 6_Pseudo_Absences-1721.Rmd
+### 6_Connectivity_Analysis.Rmd
+
+Models connectivity across the study area as cumulative current maps for historic pre-fencing and current fenced (2022) scenarios. 
+
+- requiress the predidcted habitat suitability model created in "4_RSF.Rmd" and "5_Prediction.Rmd" as well as fencing data and focal area shapefiles - all found in "files_for_Connectivity_Analysis" folder. Fencing data not uploaded here but available from: **https://www.arcgis.com/home/search.html?q=landDx** (Tyrell et al. 2022)
+
+### 7_Restoration.Rmd
+
+
+
+### Validation
+
+### 8_Pseudo_Absences-1721.Rmd
 
 Creates pseudo-absences for validation data set.
 
 - requires "Wildebeest_and_Covariates_data.RData"
 
-### 7_Validation.R
+### 9_Validation.R
 
 Script to run several analyses to validate results using t.tests
 
 - requires "Wildebeest_and_Covariates_data.RData" and pseudo-absences cretaed in "6_Pseudo_Absences-1721.Rmd"
+
+### KEY REFERENCES
+
+Tyrrell, P., Amoke, I., Betjes, K. et al. Landscape Dynamics (landDX) an open-access spatial-temporal database for the Kenya-Tanzania borderlands. Sci Data 9, 8 (2022). https://doi.org/10.1038/s41597-021-01100-9
