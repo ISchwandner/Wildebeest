@@ -20,11 +20,15 @@ library(sp)
 2. Load model and covariate raster layers
 
 ```{r}
-# habiat suitability model
+# habitat suitability model
+# (will already exist in environment if "4_RSF.Rmd" is worked through first)
 load("mod.RData")
+
 # covariate rasters
 load("WB_and_Covariates_data.RData")
+
 # data frame with occurrences and pseudo-absences as well as extracted covariates
+# (will already exist in environment if "4_RSF.Rmd" is worked through first)
 load("RSFdf.RData")
 ```
 
