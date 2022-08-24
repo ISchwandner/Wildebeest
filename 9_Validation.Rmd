@@ -1,0 +1,130 @@
+---
+title: "9_Validation"
+author: "Imogen Schwandner -2671952S"
+date: "2022-08-24"
+output: html_document
+---
+
+1. Load libraries
+
+```{r}
+library(raster)
+```
+
+2. Load wildebeest movement data sets (2010-2013 and 2017-2021) and pseudo-absence points for both
+
+```{r}
+# load movement data sets
+load("WB_and_Covariates_data.RData")
+# remove covariates not needed here
+rm(anthro, anthro1, D_river, D_roadT1, D_roadT5, D_wood, TWI, WB)
+
+# load 2010-2013 pseudo-absences (created in "2_Pseudo_Absences-1013.Rmd")
+load("Points.RData")
+
+# rename and keep only x and y column
+Points1013 <- Points[,3:4]
+
+# load 2017-2021 pseudo-absences (created in "8_Pseudo_Absences -1721validation.Rmd")
+load("Points1721.RData")
+
+# rename and keep only x and y column
+Points1721 <- Points[,3:4]
+```
+
+3. Read in models to validate
+
+3.1. Habitat Suitability Surface
+```{r}
+# read in predicted habitat suitabilty raster for study area
+suitability <-  raster("pred_rast.tif")
+```
+
+3.2. Pre-Fencing Connectivity Model
+```{r}
+#read in pre-fence connectivity (cumulative current) map
+prefence <- raster("PREFENCE_MCP_N_MM_CS_cum_curmap.asc")
+```
+
+3.3. Difference map (Fenced - Pre-Fencing connectivity levels)
+
+```{r}
+# read in fenced connectivity levels
+fence <- raster("FENCE_polygon_MCP_N_MM_CS_cum_curmap.asc")
+
+# subtract historic levels form current levels (fence - pre-fence) to obtain difference map where losses in connectivity show up as negatives and gains as positives
+diffconn <- fence - prefence
+```
+
+
+4.    Validation
+4.1.  Habitat Suitability
+
+######################################################
+######### VALIDATING PRE-FENCE SUITABILITY ###########
+######################################################
+
+Using WBH (2017-2021) movement data occurrences and pseudo-absences
+
+```{r}
+# extract habitat suitability values for occurrences
+pres <- raster::extract(suitability, WBH)
+
+# extract habitat suitability values for pseudo-absences
+abs <-  raster::extract(suitability, Points1721)
+
+# t-test to compare group means
+t.test(pres, abs)
+```
+
+Suitability is significantly higher at occurrences than at pseudo-absences.
+
+
+4.2. Pre-Fence Connectivity
+
+######################################################
+######### VALIDATING PRE-FENCE CURRENT ###############
+######################################################
+
+```{r}
+# extract connectivity (cumulative current) for occurrences
+pres2 <- raster::extract(prefence, WBH)
+
+# extract connectivity (cumulative current) for pseudo-absences
+abs2 <-  raster::extract(prefence, Points1721)
+
+# t-test to compare group means
+t.test(pres2, abs2)
+```
+
+4.3. Connectivity Difference Map
+
+######################################################
+######### VALIDATING CONNECTIVITY DIFFERENCE #########
+######################################################
+
+```{r}
+# extract connectivity loss/gain at occurrences
+pres3 <- raster::extract(diffconn, WBH)
+
+# extract connectivity loss/gain at pseudo-absences
+abs3 <- raster::extract(diffconn, Points1721)
+
+# t-test to compare group means
+t.test(pres3, abs3)
+```
+
+
+4.4. Compare habitat suitability between movement data sets
+
+```{r}
+# extract habitat suitability at 2017-2021 occurrences (peri-fencing)
+hsWBH <- raster::extract(suitability, WBH)
+
+# extract habitat suitability at 2010-2013 occurrences (pre-fencing)
+hsWBS <- raster::extract(suitability, WBS)
+
+# t-test to compare group means
+t.test(hsWBH, hsWBS)
+```
+
