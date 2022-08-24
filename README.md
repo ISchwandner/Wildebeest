@@ -44,7 +44,7 @@ Extract covariates and builds habitat suitability model in a resource selection 
 
 Makes predictions of habitat suitability across the study area using the model built in "4_RSF.Rmd" and the covariate layers in "Wildebeest_and_Covariates_data.RData"
 
-- requires model, "RSFdf" data frame and covariate layer rasters
+- requires model, "RSFdf" data frame and covariate layer rasters and folder "NDVI_layers_for_prediction" containing mean NDVI and two consecuitive NDVI ratsers for DNDVI
 
 - creates predicted habitat suitability raster across the study area ("pred_rast.tif") needed for connectiivty analysis in Circuitscape. 
 
