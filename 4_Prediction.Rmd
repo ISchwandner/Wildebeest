@@ -1,0 +1,162 @@
+---
+title: "Prediction"
+author: "Imogen Schwandner -2671952S"
+date: '2022-08-17'
+output: html_document
+---
+
+Predictions using the habitat suitability model developed in "RSF.Rmd" across the study area to derive a habitat suitability raster which can then be converted into a resistance surface for use in connectivity analysis in Circuitscape.
+
+1. Load libraries
+
+```{r}
+library(raster)
+library(rgeos)
+library(rgdal)
+library(sp)
+
+```
+
+2. Load model and covariate raster layers
+
+```{r}
+# habitat suitability model
+# (will already exist in environment if "4_RSF.Rmd" is worked through first)
+load("mod.RData")
+
+# covariate rasters
+load("WBS_covariates.RData")
+
+# data frame with occurrences and pseudo-absences as well as extracted covariates
+# (will already exist in environment if "4_RSF.Rmd" is worked through first)
+load("RSFdf.RData")
+```
+
+3. Creating raster stack to make predictions on
+
+3.1. Creating NDVI and DNDVI layer
+
+3.1.1. NDVI
+
+NDVI not treated as dynamic in prediction, but stationary, based on average NDVI of the region between 2000 and 2022
+
+```{r}
+#read mean NDVI raster file
+# edit filepaths as needed
+NDVI <- raster("./Smithsonian_data/Data/Data_Layers/32736/MEAN_MOD13Q1_250m_16_days_NDVI_2022-06-08.tif")
+
+# re-project raster to project crs (epsg:32736)
+NDVI <- projectRaster(NDVI, crs = crs)
+
+# crop to extent of study area (anthropogenic risk layer)
+NDVI <- crop(NDVI, anthro)
+
+# re-sample raster to resolution of remaining layers using bilinear interpolation (250m down to ~51 m)
+NDVI<-resample(NDVI, anthro, method="bilinear")
+```
+
+3.1.2. DNDVI
+
+DNDVI also not treated as dynamic. Here I use the difference between two mean 16-day NDVI images from the beginning to the late middle of March 2011. The middle of March is the beginning of the long wet season, when green-up (positive change in NDVI) is expected, but before the wettest month (April) with the most extreme changes in green-up. Data collection in 2010 did not start until the end of May, when senescence can already be observed, hence the choice of 2011 data (which still constitute pre-fencing circumstances).
+
+```{r}
+#load NDVI layers for the beginning and end of march 2011 (16 day mean at 250m resolution)
+# edit file paths as needed
+M1 <- raster("./Smithsonian_data/Data/Data_Layers/32736/MOD13Q1.A2011065.250m_16_days_NDVI.tif") # beginning of March '11
+M2 <- raster("./Smithsonian_data/Data/Data_Layers/32736/MOD13Q1.A2011081.250m_16_days_NDVI.tif") # middle/end of March '11
+
+# Take the difference between the end of March and beginning of March 16 day mean (DNDVI)
+DNDVI <- M2-M1
+
+#re-project
+DNDVI <- projectRaster(DNDVI, crs = crs)
+
+# crop to study area extent
+DNDVI <- crop(DNDVI, anthro)
+
+# re-sample to desired resolution
+DNDVI<-resample(DNDVI, anthro, method="bilinear")
+
+```
+
+3.2. Stack and scale all covariate layers
+
+```{r}
+# create raster stack
+stack <- stack(NDVI, DNDVI, TWI, D_wood, D_river, D_roadT1, D_roadT5, anthro)
+
+#scale
+stack <- scale(stack)
+
+#change names of stack to match the model
+names(stack) <- c("indvi", "dndvi", "TWI", "Dwood", "Driver", "Drdt1", "Drdt5", "anthroRisk")
+```
+
+4.   Make predictions
+
+4.1. Create grid to make predictions on
+
+```{r}
+# extent for grid
+e <- extent(stack)
+
+# coerce to a SpatialPolygons object
+p <- as(e, 'SpatialPolygons')
+
+# set resolution
+RES <- res(stack)
+
+#create grid
+grid <- makegrid(p, cellsize = RES)
+
+# coerce to SPDF
+grid <- SpatialPointsDataFrame(grid,
+                               data = data.frame(ID=1:nrow(grid)))
+#set crs
+grid@proj4string <- stack@crs
+```
+
+4.2. Extract grid values from ratser stack
+
+```{r}
+#extract covariates
+temp <- raster::extract(stack, grid)
+
+# add data
+grid@data<-as.data.frame(temp)
+# dummy variable for AID
+grid@data$AID <- "a"
+```
+
+4.3. Prediction
+
+4.3.1. Add Predictions
+
+```{r}
+# add predictions
+grid$pred <- predict(mod, re.form = NA, # ignores random effect when making predictions
+                          newdata = grid@data,
+                          type = "response")
+```
+
+4.3.2. Convert greid with predictions to raster
+
+```{r}
+# turn into raster
+pred_rast <- rasterFromXYZ(xyz = data.frame(x = coordinates(grid)[,1],
+                                            y = coordinates(grid)[,2],
+                                            z = grid$pred),
+                           res = c(RES,RES),
+                           crs = grid@proj4string)
+# plot prediction raster
+# plot(pred_rast)
+```
+
+4.3.3. Save to file
+
+```{r}
+# save predicted habitat suitability as GeoTiff file
+writeRaster(pred_rast, file = "pred_rast.tif")
+```
+
+
