@@ -1,7 +1,11 @@
 # Wildebeest 
 Repository for manuscript on Wildebeest Migration in the Greater Mara and Impacts of Fencing on Connectivity  
 
-#### **Title: Restoring connectivity with targeted fence removal in a migratory ecosystem**
+#### **Manuscript title: Restoring connectivity with targeted fence removal in a migratory ecosystem**
+
+###   PROJECT BACKGROUND ###
+
+Master's thesis project at the University of Glasgow's School of Biodiversity, One Health and Veterinary Medicine in partnership with colleagues from the Smithsonian Institute of Conservation Biology's Conservation Ecology Centre. Under supervision of T.Morrison and J.Stabach.
 
 ###   PROJECT APPROACH ###
 
