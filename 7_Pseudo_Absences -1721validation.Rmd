@@ -17,7 +17,7 @@ library(readr)
 library(raster)
 ```
 
-# Data used below are not yet publicly available and have tehrefore beeen removed from the repository
+# Data used below are not yet publicly available and have therefore beeen removed from the repository
 
 <!-- 2. Load wildebeest data -->
 
