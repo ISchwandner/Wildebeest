@@ -774,20 +774,11 @@ currents$diffprefencefence <- prefencecurrent - fencecurrent
 # improvement in connectivity as the percentage of the difference (gap) between the current and historic scenario bridged by the intervention
 currents$gapfilled <- currents$improvement/currents$diffprefencefence *100
 
-# the amount of connectivity retained in the currnet fenced scenario as a percentage of the historic connectivity
+# the amount of connectivity retained in the current fenced scenario as a percentage of the historic connectivity
 fencepercentofprefence <- fencecurrent/prefencecurrent
 
 # the improved connectivity in restoration scenarios as a percentage of the historic connectivity levels
 currents$percentofhistoric <- currents$sum_current/currents$prefencecurrent *100
 ```
 
-4.7. Validation of connectivity improval
-
-```{r}
-# create a pseudo-group for current levels (mean of fenced current and standard deviation of 0)
-fenced <- rep(fencecurrent, 12)
-
-# test if fence removal connectivity levels are significantly different (and higher) than the current fenced levels
-t.test(fenced, currents$sum_current)
-```
 
