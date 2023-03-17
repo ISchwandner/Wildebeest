@@ -139,7 +139,7 @@ grid$pred <- predict(mod, re.form = NA, # ignores random effect when making pred
                           type = "response")
 ```
 
-4.3.2. Convert greid with predictions to raster
+4.3.2. Convert grid with predictions to raster
 
 ```{r}
 # turn into raster
