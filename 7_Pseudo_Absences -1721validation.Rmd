@@ -17,16 +17,14 @@ library(readr)
 library(raster)
 ```
 
-# Data used below are not yet publicly available and have therefore beeen removed from the repository
+2. Load wildebeest data
 
-<!-- 2. Load wildebeest data -->
+```{r}
+load("WB_and_Covariates_data.RData")
 
-<!-- ```{r} -->
-<!-- load("WB_and_Covariates_data.RData") -->
-
-<!-- # remove covariates and other objects not needed here -->
-<!-- rm(anthro, anthro1, D_river, D_roadT1, D_roadT5, D_wood, TWI, WB, WBS) -->
-<!-- ``` -->
+# remove covariates and other objects not needed here
+rm(anthro, anthro1, D_river, D_roadT1, D_roadT5, D_wood, TWI, WB, WBS)
+```
 
 3. Create buffers around presence points to generate pseudo-absences within
 
@@ -63,12 +61,12 @@ WBtraj.df <- subset(WBtraj.df, dist != "NA")
 
 ### 3.1.4. Maximum distance displaced over 3 h PER INDIVIDUAL
 # Create object with individual ID and maximum distance displaced
-#indiv.max.dist <- WBtraj.df %>% 
-                  group_by(id) %>% 
+indiv.max.dist <- WBtraj.df %>%
+                  group_by(id) %>%
                   summarise(maxdist = max(dist))
 
 #### if you ahve time check  why the above doesnt work but this does: 
-WBHind <- split(WBHind, WBtraj.df$id)
+#WBHind <- split(WBHind, WBtraj.df$id)
 
 sizes <- c()
 for(i in 1:length(WBHind)){
