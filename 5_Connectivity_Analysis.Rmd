@@ -172,7 +172,7 @@ CS_run <- paste(CS_exe, paste(getwd(),"myini.ini",sep="/")) # Make the cmd
 system(CS_run)
 ```
 
-3.2. FENCED (CURRENT) CONNECTIVITY LEVELS 2022
+3.2. FENCED CONNECTIVITY LEVELS 2022
 
 ```{r}
 # Make a place holder for the cs_run.exe path
