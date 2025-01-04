@@ -11,6 +11,8 @@ output: html_document
 library(raster)
 library(glmmTMB)
 library(lme4)
+library(rgdal)
+library(sf)
 ```
 
 2. Load wildebeest movement data sets (2010-2013 and 2017-2021) and pseudo-absence points for both
@@ -19,11 +21,14 @@ library(lme4)
 
 ```{r}
 # load movement data sets
-load("WBS_covariates.RData")
-
+load("WB_and_Covariates_data.RData")
 
 # remove covariates not needed here
 rm(anthro, D_river, D_roadT1, D_roadT5, D_wood, TWI)
+
+## Load restoration area of interest extent for fine scale validation
+#load restoration extend
+Rextent <- readOGR("restoration_extent.shp")
 
 
 # load 2010-2013 pseudo-absences (created in "2_Pseudo_Absences-1013.Rmd")
@@ -40,17 +45,42 @@ Points1013 <- Points1013[,3:4]
 
 # load 2017-2021 pseudo-absences (created in "8_Pseudo_Absences -1721validation.Rmd")
 load("Points1721.RData")
+
 # rename
 Points1721 <- Points
 
-# isolate AID column needed for GLMMs
+##Crop pseudo-absences (Points1721) for fine scale validation in restoration AOI
+# Convert the data frame to an sf object
+Points1721_sf <- st_as_sf(Points1721, coords = c("x", "y"), crs = st_crs(Rextent))
+# Crop the points using the bounding box
+Points1721R <- st_crop(Points1721_sf, st_bbox(Rextent))
+# Convert the sf object to a data frame without geometry
+Points1721R <- cbind(st_drop_geometry(Points1721R), st_coordinates(Points1721R))
+
+# isolate AID column needed for GLMMs (full regional scale)
 P1721AID <- Points1721[,2]
 
-# reduce Points to x and y coordinates for raster::extract
+# reduce Points to x and y coordinates for raster::extract (full regional scale)
 Points1721 <- Points1721[,3:4]
 
+# isolate AID column needed for GLMMs (restoration fine scale)
+P1721AIDR <- Points1721R[,2]
+
+# reduce Points to x and y coordinates for raster::extract (restoration fine scale)
+Points1721R <- Points1721R[,3:4]
+
 rm(Points)
+
+##Crop WBH data to restoration extent for fine scale validation
+
+#ensure CRS of data and extent match
+crs(Rextent) <- crs(WBH)
+
+#create restoration extent WBH locations by cropping WBH by restoration extent
+WBHR <- crop(WBH, extent(Rextent))
+
 ```
+
 
 3. Read in models to validate
 
@@ -85,7 +115,7 @@ diffconn <- fence - prefence
 
 GOAL: Validate predicted habitat suitability using WBH (2017-2021) movement data occurrences and pseudo-absences
 
-
+Regional scale (entire Mara)
 ```{r}
 # extract habitat suitability values for occurrences
 pres <- raster::extract(suitability, WBH)
@@ -107,12 +137,33 @@ WBHPoints1721$PA <- as.factor(WBHPoints1721$PA)
 
 ```
 
+Fine scale (restoration area of interest)
+```{r}
+# extract habitat suitability values for occurrences
+pres <- raster::extract(suitability, WBHR)
+
+# create data frame with suitability value, AID and Presence/Absence column (1 = presence)
+presAIDR <-  data.frame("Suitability" = pres, "AID" = WBHR@data[,1], "PA" = 1)
+
+# extract habitat suitability values for pseudo-absences
+abs <-  raster::extract(suitability, Points1721R)
+
+# create data frame with suitability value, AID and Presence/Absence column (0 = absence)
+absAIDR <- data.frame("Suitability" = abs, "AID" = P1721AIDR, "PA" = 0)
+
+# combine presence and absence data frames for modelling
+WBHPoints1721R <- rbind(presAIDR, absAIDR)
+
+# ensure PA is a factor for modelling
+WBHPoints1721R$PA <- as.factor(WBHPoints1721R$PA)
+
+```
 
 4.1.2. Pre-Fence Connectivity
 
 GOAL: Validate pre-fencing connectivity model using WBH (2017-2021) movement data occurrences and pseudo-absences
 
-
+Regional scale (entire Mara)
 ```{r}
 # extract connectivity value (cumulative current) for occurrences
 pres2 <- raster::extract(prefence, WBH)
@@ -128,13 +179,27 @@ WBHPoints1721$Current <- C
 
 ```
 
+Fine scale (restoration extent)
+```{r}
+# extract connectivity value (cumulative current) for occurrences
+pres2 <- raster::extract(prefence, WBHR)
 
+# extract connectivity value (cumulative current) for pseudo-absences
+abs2 <-  raster::extract(prefence, Points1721R)
+
+# combine values
+C <- c(pres2,abs2)
+
+# add to WBHPoints1721 data frame
+WBHPoints1721R$Current <- C
+
+```
 
 4.1.3. Connectivity Difference Map
 
 GOAL: Validate connectivity change difference map using WBH (2017-2021) movement data occurrences and pseudo-absences
 
-
+Regional scale (entire Mara)
 ```{r}
 # extract connectivity loss/gain at occurrences
 pres3 <- raster::extract(diffconn, WBH)
@@ -145,8 +210,26 @@ abs3 <- raster::extract(diffconn, Points1721)
 # combine values
 CC <- c(pres3, abs3)
 
-# add to WBHPoints1721 data frame
+
+# add connectivity change results to WBHPoints1721R data frame
 WBHPoints1721$CChange <- CC
+
+```
+
+Fine scale (restoration area of interest)
+```{r}
+# extract connectivity loss/gain at occurrences
+pres4 <- raster::extract(diffconn, WBHR)
+
+# extract connectivity loss/gain at pseudo-absences
+abs4 <- raster::extract(diffconn, Points1721R)
+
+# combine values
+CC <- c(pres4,abs4)
+
+# add to WBHPoints1721 data frame
+WBHPoints1721R$CC <- CC
+
 ```
 
 4.2. Remove NA's
@@ -160,26 +243,73 @@ WBHPoints1721 <- WBHPoints1721[complete.cases(WBHPoints1721),]
 
 Less than 1 % of data points removed.
 
+Remove NA's on fine scale restoration validation
+```{r}
+# removes entire rows with NA's created in absences due to some points coming from buffers outside of the range of the fine scale validation
+WBHPoints1721R <- WBHPoints1721R[complete.cases(WBHPoints1721R),]
+```
+
+About 1% of data removed.
+
 4.3. Modelling
 
 ######################################################
 ######### VALIDATING PRE-FENCE SUITABILITY ###########
 ######################################################
 
+Regional scale (entire Mara)
 ```{r}
 ### GLMM ###
 # model the effect of presence or absence on suitability accounting for variation in animal ID (AID) with a logit link from a beta distribution
 modTMBS <- glmmTMB(Suitability ~ PA + (1|AID), WBHPoints1721, family=list(family="beta",link="logit"))
+summary(modTMBS)
 ```
 
 RESULT: 
 Predicted habitat suitability is significantly higher (0.55 ± 0.0057 times higher) at occurrences than at pseudo-absences of peri-fencing movement data.
 
+Fine scale (restoration area of interest)
+```{r}
+### GLMM ###
+# model the effect of presence or absence on suitability accounting for variation in animal ID (AID) with a logit link from a beta distribution
+modTMBSR <- glmmTMB(Suitability ~ PA + (1|AID), WBHPoints1721R, family=list(family="beta",link="logit"))
+summary(modTMBSR)
+
+```
+```{r}
+#fixing the error
+#disproves the error
+# sum(is.na(WBHPoints1721R$Suitability))
+# sum(is.nan(WBHPoints1721R$Suitability))
+# sum(is.infinite(WBHPoints1721R$Suitability)) 
+
+modTMBSR1 <- glmmTMB(Suitability ~ PA + (1|AID), 
+                    data = WBHPoints1721R, 
+                    family = list(family = "beta", link = "logit"),
+                    start = list(beta = c(0, 0), b = rep(0, length(unique(WBHPoints1721R$AID)))))
+```
+
+
+```{r}
+# tried several things to fix this
+# fitting the model without the random effect works
+modTMBSRsimple <- glmmTMB(Suitability ~ PA, WBHPoints1721R, family=list(family="beta",link="logit"))
+summary(modTMBSRsimple)
+# logit transforming suitability to get a "normal" slightly right-skewed distribution to then fit an lmer model works
+WBHPoints1721R$logit_Suitability <- log(WBHPoints1721R$Suitability / (1 - WBHPoints1721R$Suitability))
+hist(WBHPoints1721R$logit_Suitability)
+
+
+modlmSR <- lmer(logit_Suitability ~ PA + (1|AID), WBHPoints1721R)
+summary(modlmSR)
+
+```
 
 ######################################################
 ######### VALIDATING PRE-FENCE CURRENT ###############
 ######################################################
 
+Regional scale (entire Mara)
 ```{r}
 ### LMM ###
 # model the effect of presence or absence on cumulative current (connectivity) - current is log transformed to normalise - using a linear mixed effects model and a random effect for animal ID
@@ -190,19 +320,87 @@ summary(modlmC)
 RESULT:
 Current is 0.47 ± 0.0048 times higher at presences than pseudo-absences of peri-fencing movement data. 
 
+Fine scale (restoration area of interest)
+```{r}
+### LMM ###
+# model the effect of presence or absence on cumulative current (connectivity) - current is log transformed to normalise - using a linear mixed effects model and a random effect for animal ID
+modlmCR <- lmer(log(Current) ~ PA + (1|AID), WBHPoints1721R)
+summary(modlmCR)
+```
+RESULT:
+Validation data wildebeest moved in areas where pre-fencing connectivity was significantly higher (0.077772 ± 0.007567) than areas available to them. This underlines that the validation data wildebeest still closely tracked movements of the 2010-2013 historic pre-fencing wildebeest over the entire Mara region. However, at the finer scale of the restoration area of interest, we observe a much weaker coefficient underlining that in this area, where many historic pathways were already blocked by fencing in 2017-2021, validation data wildebeest already moved in areas that were less important for connectivity historically. 
+
 
 ######################################################
 ######### VALIDATING CONNECTIVITY DIFFERENCE #########
 ######################################################
 
+Regional scale (entire Mara)
 ```{r}
 ### LMM ###
 # model the effect of presence or absence on current/connectivity change accounting for variation in animal ID (AID) from a normal distribution
 modlmCC <- lmer(CChange ~ PA + (1|AID), WBHPoints1721)
+summary(modlmCC)
 ```
 
 
 RESULT:
 Peri-fencing wildebeest moved in areas of significantly higher (0.000239 ± 0.00001 times higher) connectivity gain (rather than loss) compared to pre-fencing wildebeest. Hence the model predicted the changes in movement well.
 
+Fine scale (restoration area of interest)
+```{r}
+### LMM ###
+# model the effect of presence or absence on current/connectivity change accounting for variation in animal ID (AID) from a normal distribution
+modlmCCR <- lmer(CC ~ PA + (1|AID), WBHPoints1721R)
+summary(modlmCCR)
+```
+  -0.0007179000
+SE 0.0000276300
 
+RESULT:
+Validation data Wildebeest (2017-2021) within the restoration area of interest move predominantly in areas of significant connectivity loss (-0.0007179 ± 0.0000276 lower at presences than pseudo-absences) than expected by chance.
+
+
+######################################################
+#########  VALIDATING  FENCE  RESISTANCE     #########
+######################################################
+
+```{r}
+#load resistance surface with fences and fenced in polygons at resistance 100
+resistance <- raster("C:/Users/Owner/Desktop/MScQMBCE/DISS/Circuitscape/occupanczfenceplr.asc")
+```
+
+Regional scale (entire Mara)
+```{r}
+# extract connectivity loss/gain at occurrences
+pres5 <- raster::extract(resistance, WBH)
+
+# extract connectivity loss/gain at pseudo-absences
+abs5 <- raster::extract(resistance, Points1721)
+
+# combine values
+R <- c(pres5, abs5)
+
+
+# add connectivity change results to WBHPoints1721R data frame
+WBHPoints1721$Resistance <- R
+
+# get proportion of presences that fall on fences (resistance = 100)
+
+```
+
+Fine scale (restoration area of interest)
+```{r}
+# extract connectivity loss/gain at occurrences
+pres4 <- raster::extract(diffconn, WBHR)
+
+# extract connectivity loss/gain at pseudo-absences
+abs4 <- raster::extract(diffconn, Points1721R)
+
+# combine values
+CC <- c(pres4,abs4)
+
+# add to WBHPoints1721 data frame
+WBHPoints1721R$CC <- CC
+
+```
