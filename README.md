@@ -1,7 +1,9 @@
 # Wildebeest 
 Repository for manuscript on Wildebeest Migration in the Greater Mara and Impacts of Fencing on Connectivity  
+Zenodo DOI 10.5281/zenodo.14599735
 
-#### **Manuscript title: Restoring connectivity with targeted fence removal in a migratory ecosystem**
+#### **Manuscript title: Predicting the impact of targeted fence removal on connectivity in a migratory ecosystem**
+Accepted in Ecological Applications
 
 ###   PROJECT BACKGROUND ###
 
