@@ -15,7 +15,7 @@ Develop a habitat suitability model based on historic (pre-fencing) GPS movement
 
 ###   CONTENTS  ###
 Scripts numbered in order. 
-Code builds on objects from previous scripts and can either be run consecutively or by storing final objects as .RData files for later use in the next script. Validation wildebeest movement data are not yet public and hence have been removed from this repository.
+Code builds on objects from previous scripts and can either be run consecutively or by storing final objects as .RData files for later use in the next script.
 
 ### DATA
 
@@ -27,9 +27,7 @@ Wildebeest GPS collar data from the Greater Mara
 
 - Wildebeest movement data from 2010-2013 (historic STABACH et al. (2020) data set - available on movebank.org - **doi.org/10.5441/001/1.h0t27719**) 
 
---- (NOT INCLUDED) ---  
-
-- Wildebeest movement data from 2017-2021 (newer data set HOPCRAFT - unpublished data) used as validation data  
+- Wildebeest movement data from 2017-2021 (validation data set HOPCRAFT **https://www.movebank.org/cms/webapp?gwt_fragment=page%3Dstudies%2Cpath%3Dstudy4901146318**) used as validation data  
 
 ----------------------
 
@@ -71,27 +69,28 @@ Models connectivity across the study area as cumulative current maps for histori
 
 ### Restoration
 
-### 6_Restoration.Rmd
+### 6_Restoration_and_Cost.Rmd
 
-Using different corridors delineated in QGIGS v.3.16 using historic connectivity levels and the raw fencing data, the fence rasters are altered to simulate these corridors and connectivity analysis repeated. Results are then compared to historic and current levels to assess improvement.
+Using different corridors delineated in QGIGS v.3.16 using historic connectivity levels and the raw fencing data, the fence rasters are altered to simulate these corridors and connectivity analysis repeated. Results are then compared to historic and current levels to assess improvement. Finally, the cost of fence removal proportional tocorridor area is calculated and plotted against connectivity improvement fro each corridor using real compensation costs from the region.
 
-- requires historic and current connectivity maps created in "5_Connectivity_Analysis.Rmd" as well as fence rasters for each corridor restoration scenario "corridor_fencerasters.zip". Files were created in QGIS v.3.16 by outlining corridor paths as described above, then buffering to different corridor widths and cropping corridor extents out of the fencing dataset.
+- requires pre-fence and fenced connectivity maps created in "5_Connectivity_Analysis.Rmd" as well as fence rasters for each corridor restoration scenario "corridor_fencerasters.zip". Files were created in QGIS v.3.16 by outlining corridor paths as described above, then buffering to different corridor widths and cropping corridor extents out of the fencing dataset.
 
 ### Validation 
-
---- (requires unpublished 2017-2021 movement data not included here) ---
 
 ### 7_Pseudo_Absences-1721.Rmd
 
 Creates pseudo-absences for validation data set.
 
-- requires "WB_covariates.RData" (does no longer include required movement data)
+- requires "WB_covariates.RData" 
 
 ### 8_Validation.R
 
-Script to run several analyses to validate results using t.tests
+Validates the predicted habitat suitability surface, the predicted pre-fencing and fenced connectivity levels and the map of connectivity change by evaulating the impact of presence or pseudo-absence on each metric (Is there a significant difference between presences and absences?). This is done at both a regional scale across the entire Mara and a local scale for only the restoration atrea of interest.
 
-- requires movement data no longer included in "WB_covariates.RData" and pseudo-absences created in "7_Pseudo_Absences-1721.Rmd"
+- requires the predicted habitat suitability surface from "4_Prediction.Rmd"
+- the pre-fence and fenced connectivity maps and the model of change between the two created in "5_Connectivity_Analysis.Rmd"
+- the restoration raea of interest shape from "6_Restoration_and_Cost.Rmd"
+- requires validation data set movement data from "WB_covariates.RData" and pseudo-absences created in "7_Pseudo_Absences-1721.Rmd"
 
 ### KEY REFERENCES
 
