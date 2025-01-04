@@ -45,7 +45,7 @@ WBS$datetime <- as.POSIXct(WBS$Date, format="%d/%m/%Y %H:%M", tz='GMT')
 WBtraj <- as.ltraj(cbind(WBS$x, WBS$y),date = WBS$datetime,id = (WBS$AID))
 
 ### 3.1.2. Create large combined trajectories data frame
-# Create a data frame to holds all of the contents of WBtraj 
+# Create a data frame to hold all of the contents of WBtraj 
 # Put first individual into the data frame
 WBtraj.df <- data.frame(WBtraj[[1]], id = attr(WBtraj[[1]], "id"))
 
